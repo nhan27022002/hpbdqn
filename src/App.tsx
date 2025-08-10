@@ -562,7 +562,7 @@ Lớp bờ du :)) 🎂🎉
   if (entered && showLetter) {
     return (
       <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#7a3a54ff", height: "100vh" }}>
-        <h1>💌 Sinh nhật vui vẻ nhé 💌</h1>
+        <h1>💌 Gửi đến Như 💌</h1>
         <p style={{ fontSize: "18px", maxWidth: "680px", margin: "24px auto", lineHeight: "1.7", whiteSpace: "pre-line", textAlign: "center" }}>
           {letterText}
         </p>
