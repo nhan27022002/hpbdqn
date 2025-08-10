@@ -58,15 +58,12 @@ function App() {
   const [showLetter, setShowLetter] = useState(false);
 
 // Nội dung thư — dùng \n để xuống dòng theo ý bạn
-  const letterText = `Chúc em sinh nhật vui vẻ nhé
-   Tuổi mới thêm niềm vui mới
-Cầu gì được nấy
-Cầu tiền được tiền
-Cầu tình được tình
-Cầu tài được tài.
+  const letterText = `Chúc em sinh nhật vui vẻ nhé, tuổi mới thêm niềm vui mới.
+Cầu gì được nấy, cầu tiền được tiền, cầu tình được tình, cầu tài được tài.
 Chúc em sống mãi trong ánh sáng của 10 phương chư phật.
 Lớp bờ du :)) 🎂🎉
-`;
+Và
+Hãy chuẩn bị đi nhé, anh sẽ trở lại với cuộc tấn công vô cùng mạnh mẽ!!! 😘😘`;
 
   const audioRef = useRef<HTMLAudioElement>(new Audio(src));
   const microphoneStreamRef = useRef<MediaStream | undefined>(undefined);
@@ -94,7 +91,6 @@ Lớp bờ du :)) 🎂🎉
   const SWRef = useRef(window.innerWidth);
   const SHRef = useRef(window.innerHeight);
   const rafRef = useRef<number | null>(null);
-  const runningRef = useRef(true);
 
   // stars/hearts
   const stars = useRef<Array<{ x: number; y: number; r: number; tw: number; sp: number }>>([]);
@@ -344,7 +340,7 @@ Lớp bờ du :)) 🎂🎉
   };
 
   const drawDigitDots = (ctx: CanvasRenderingContext2D, ch: string) => {
-    const SW = SWRef.current, SH = SHRef.current, DPR = dprRef.current;
+    const SW = SWRef.current, SH = SHRef.current;
     ctx.clearRect(0, 0, SW, SH);
     const off = document.createElement("canvas");
     const octx = off.getContext("2d")!;
@@ -410,7 +406,7 @@ Lớp bờ du :)) 🎂🎉
 
   const WORD_MAX_DOTS = 1800;
   const getWordDots = (text: string) => {
-    const SW = SWRef.current, SH = SHRef.current, DPR = dprRef.current;
+    const SW = SWRef.current, SH = SHRef.current;
     const off = document.createElement("canvas");
     const octx = off.getContext("2d")!;
     off.width = SW; off.height = SH; // dùng kích thước CSS để lấy mẫu, tránh lỗi cắt khi DPR>1
@@ -446,7 +442,6 @@ Lớp bờ du :)) 🎂🎉
     // giảm số lượng chấm để bớt lag
     let sampled = dots;
     let baseR = step/2.2;
-    const WORD_MAX_DOTS = 1800;
     if (dots.length > WORD_MAX_DOTS) {
       const ratio = WORD_MAX_DOTS / dots.length;
       sampled = dots.filter(() => Math.random() < ratio);
@@ -459,7 +454,7 @@ Lớp bờ du :)) 🎂🎉
     // Giữ chữ "HAPPY BIRTHDAY" lại trên màn hình, KHÔNG fade-out
     wordAnimActiveRef.current = true; // tắt layer matrix trong lúc hiển thị chữ
     const SW = SWRef.current, SH = SHRef.current;
-    const { dots, step, radius } = getWordDots(text);
+    const { dots, radius } = getWordDots(text);
     const parts = dots.map(d => ({ tx: d.x, ty: d.y, x: SW / 2 + (Math.random() - 0.5) * 50, y: SH / 2 + (Math.random() - 0.5) * 50, r: 0, tr: radius }));
     const inDur = 800; // chỉ animate bay vào
     const startIn = performance.now();
@@ -564,7 +559,7 @@ Lớp bờ du :)) 🎂🎉
   if (entered && showLetter) {
     return (
       <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#7a3a54ff", height: "100vh" }}>
-        <h1>💌 Gửi đến Như 💌</h1>
+        <h1>💌 Sinh nhật vui vẻ nhé 💌</h1>
         <p style={{ fontSize: "18px", maxWidth: "680px", margin: "24px auto", lineHeight: "1.7", whiteSpace: "pre-line", textAlign: "center" }}>
           {letterText}
         </p>
