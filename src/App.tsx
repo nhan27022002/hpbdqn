@@ -58,12 +58,15 @@ function App() {
   const [showLetter, setShowLetter] = useState(false);
 
 // Nội dung thư — dùng \n để xuống dòng theo ý bạn
-  const letterText = `Chúc em sinh nhật vui vẻ nhé, tuổi mới thêm niềm vui mới.
-Cầu gì được nấy, cầu tiền được tiền, cầu tình được tình, cầu tài được tài.
+  const letterText = `Chúc em sinh nhật vui vẻ nhé
+   Tuổi mới thêm niềm vui mới
+Cầu gì được nấy
+ Cầu tiền được tiền
+ Cầu tình được tình
+ Cầu tài được tài
 Chúc em sống mãi trong ánh sáng của 10 phương chư phật.
 Lớp bờ du :)) 🎂🎉
-Và
-Hãy chuẩn bị đi nhé, anh sẽ trở lại với cuộc tấn công vô cùng mạnh mẽ!!! 😘😘`;
+😘😘`;
 
   const audioRef = useRef<HTMLAudioElement>(new Audio(src));
   const microphoneStreamRef = useRef<MediaStream | undefined>(undefined);
