@@ -33,9 +33,16 @@ const INTRO_START_DELAY = 2000; // 2s chờ rồi hiện số 3
 const INTRO_RAIN_SPEED = 0.35; // tốc độ mưa chữ
 const INTRO_LINE_SPACING = 2.0; // giãn dòng theo cột
 const INTRO_MESSAGE = "HAPPY BIRTHDAY";
-const INTRO_CONFETTI = 240; // số mảnh confetti khi chúc mừng
+const INTRO_CONFETTI = 120; // số mảnh confetti khi chúc mừng
 const INTRO_WORD_SHIFT = -0.05; // dịch chữ HBD sang trái ~5% chiều rộng màn hình
 const INTRO_MARGIN = 0.04; // lề an toàn 4% để không bị cắt cạnh
+
+// ====== EXTRA LINES AFTER HBD ======
+const AFTER_LINES = [
+  "Quỳnh Như 🎉",
+  "13-10-2007✨",
+  " 18+ 💖"
+] as const;
 
 // ====== UTILS CHUNG ======
 const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
@@ -58,15 +65,12 @@ function App() {
   const [showLetter, setShowLetter] = useState(false);
 
 // Nội dung thư — dùng \n để xuống dòng theo ý bạn
-  const letterText = `Chúc em sinh nhật vui vẻ nhé
-   Tuổi mới thêm niềm vui mới
-Cầu gì được nấy
- Cầu tiền được tiền
- Cầu tình được tình
- Cầu tài được tài
+  const letterText = `Chúc em sinh nhật vui vẻ nhé, tuổi mới thêm niềm vui mới.
+Cầu gì được nấy, cầu tiền được tiền, cầu tình được tình, cầu tài được tài.
 Chúc em sống mãi trong ánh sáng của 10 phương chư phật.
 Lớp bờ du :)) 🎂🎉
-😘😘`;
+Và
+Hãy chuẩn bị đi nhé, anh sẽ trở lại với cuộc tấn công vô cùng mạnh mẽ!!! 😘😘`;
 
   const audioRef = useRef<HTMLAudioElement>(new Audio(src));
   const microphoneStreamRef = useRef<MediaStream | undefined>(undefined);
@@ -90,10 +94,11 @@ Lớp bờ du :)) 🎂🎉
   const matrixRef = useRef<HTMLCanvasElement | null>(null);
   const ctnRef = useRef<HTMLCanvasElement | null>(null);
 
-  const dprRef = useRef(Math.min(window.devicePixelRatio || 1, 2));
+  const dprRef = useRef(Math.min(window.devicePixelRatio || 1, 1));
   const SWRef = useRef(window.innerWidth);
   const SHRef = useRef(window.innerHeight);
   const rafRef = useRef<number | null>(null);
+  const gradRef = useRef<CanvasGradient | null>(null);
 
   // stars/hearts
   const stars = useRef<Array<{ x: number; y: number; r: number; tw: number; sp: number }>>([]);
@@ -105,6 +110,9 @@ Lớp bờ du :)) 🎂🎉
   // flag: đang animate chữ HBD để giảm tải render
   const wordAnimActiveRef = useRef(false);
   const wordBBoxRef = useRef<{minX:number;maxX:number;minY:number;maxY:number} | null>(null);
+  const hbdFontSizeRef = useRef<number | null>(null);
+  const heavyPhaseRef = useRef(false);
+  const frameRef = useRef(0);
 
   // matrix
   const letters = useMemo(() => " HAPPY BIRTHDAY ".split(""), []);
@@ -231,7 +239,7 @@ Lớp bờ du :)) 🎂🎉
   const initStars = () => {
     const SW = SWRef.current, SH = SHRef.current;
     stars.current.length = 0;
-    const count = Math.floor((SW * SH) / 18000);
+    const count = Math.floor((SW * SH) / 26000);
     for (let i = 0; i < count; i++) {
       stars.current.push({ x: Math.random() * SW, y: Math.random() * SH, r: Math.random() * 1.6 + 0.4, tw: Math.random() * Math.PI * 2, sp: Math.random() * 0.25 + 0.05 });
     }
@@ -263,7 +271,7 @@ Lớp bờ du :)) 🎂🎉
     }
     ctx.globalAlpha = 1;
 
-    if (hearts.current.length < 10 && Math.random() < 0.05) {
+    if (hearts.current.length < 8 && Math.random() < 0.03) {
       const size = Math.random() * 10 + 8;
       hearts.current.push({ x: Math.random() * SW, y: SH + 20, size, vy: 0.6 + Math.random() * 0.8, vx: (Math.random() - .5) * 0.4, a: 1, rot: Math.random() * Math.PI });
     }
@@ -377,13 +385,12 @@ Lớp bờ du :)) 🎂🎉
       for (const d of dots) { d.x += dx; d.y += dy; }
     }
 
-    ctx.fillStyle = gradColor(ctx, SW, SH);
-    ctx.shadowColor = "#ff4fa3";
-    ctx.shadowBlur = 12;
-    for (const d of dots) {
-      ctx.beginPath(); ctx.arc(d.x, d.y, step / 2.2, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.shadowBlur = 0; ctx.shadowColor = "transparent";
+    ctx.fillStyle = gradRef.current || gradColor(ctx, SW, SH);
+    ctx.shadowColor = "transparent"; (ctx as any).shadowBlur = 0;
+    ctx.beginPath();
+    const r = step / 2.2;
+    for (const d of dots) { ctx.moveTo(d.x + r, d.y); ctx.arc(d.x, d.y, r, 0, Math.PI * 2); }
+    ctx.fill();
     return { dots, step };
   };
 
@@ -395,8 +402,8 @@ Lớp bờ du :)) 🎂🎉
       const p = Math.min(1, (t - start) / duration);
       ctx.clearRect(0, 0, SW, SH);
       ctx.globalAlpha = 1 - p;
-      ctx.fillStyle = gradColor(ctx, SW, SH);
-      ctx.shadowColor = "#ff4fa3"; ctx.shadowBlur = 16 * (1 - p);
+      ctx.fillStyle = gradRef.current || gradColor(ctx, SW, SH);
+      ctx.shadowColor = "#ff4fa3"; ctx.shadowBlur = 8 * (1 - p);
       for (const pt of parts) {
         pt.x += pt.vx; pt.y += pt.vy;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, Math.max(0.1, pt.r * (1 - p)), 0, Math.PI * 2); ctx.fill();
@@ -406,20 +413,20 @@ Lớp bờ du :)) 🎂🎉
     };
     rafRef.current = requestAnimationFrame(tick);
   });
-
-  const WORD_MAX_DOTS = 1800;
   const getWordDots = (text: string) => {
     const SW = SWRef.current, SH = SHRef.current;
     const off = document.createElement("canvas");
     const octx = off.getContext("2d")!;
     off.width = SW; off.height = SH; // dùng kích thước CSS để lấy mẫu, tránh lỗi cắt khi DPR>1
-    let fz = Math.min(SW, SH) * 0.18;
+    // TO HƠN
+    let fz = Math.min(SW, SH) * 0.24;
     octx.font = `900 ${fz}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`;
     octx.textAlign = "center"; octx.textBaseline = "middle";
     let metrics = octx.measureText(text), tries = 0;
-    while (metrics.width > SW * 0.9 && tries < 12) { fz *= 0.92; octx.font = `900 ${fz}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`; metrics = octx.measureText(text); tries++; }
+    while (metrics.width > SW * 0.9 && tries < 14) { fz *= 0.92; octx.font = `900 ${fz}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`; metrics = octx.measureText(text); tries++; }
     octx.fillStyle = "#fff"; octx.fillText(text, SW / 2, SH / 2);
-    const step = Math.max(6, Math.floor(Math.min(SW, SH) / 100));
+    // NHIỀU CHẤM HƠN & CHẤM NHỎ HƠN
+    const step = Math.max(4, Math.floor(Math.min(SW, SH) / 140));
     const { data } = octx.getImageData(0, 0, SW, SH);
     const dots: { x: number; y: number }[] = [];
     let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
@@ -444,47 +451,180 @@ Lớp bờ du :)) 🎂🎉
     }
     // giảm số lượng chấm để bớt lag
     let sampled = dots;
-    let baseR = step/2.2;
-    if (dots.length > WORD_MAX_DOTS) {
-      const ratio = WORD_MAX_DOTS / dots.length;
-      sampled = dots.filter(() => Math.random() < ratio);
-      baseR = Math.min(baseR * Math.sqrt(1/ratio), baseR*2.0);
-    }
-    return { dots: sampled, step, radius: baseR };
+    let baseR = step/3.0; // chấm nhỏ hơn
+    // lưu font size để các dòng sau dùng cùng kích thước
+    hbdFontSizeRef.current = fz;
+    return { dots: sampled, step, radius: baseR, fontSize: fz };
   };
 
   const animateWordSequence = (ctx: CanvasRenderingContext2D, text = INTRO_MESSAGE) => new Promise<void>((resolve) => {
-    // Giữ chữ "HAPPY BIRTHDAY" lại trên màn hình, KHÔNG fade-out
+    // Hiện chữ HBD bằng chấm, giữ 2s rồi TAN BIẾN
     wordAnimActiveRef.current = true; // tắt layer matrix trong lúc hiển thị chữ
     const SW = SWRef.current, SH = SHRef.current;
-    const { dots, radius } = getWordDots(text);
-    const parts = dots.map(d => ({ tx: d.x, ty: d.y, x: SW / 2 + (Math.random() - 0.5) * 50, y: SH / 2 + (Math.random() - 0.5) * 50, r: 0, tr: radius }));
-    const inDur = 800; // chỉ animate bay vào
-    const startIn = performance.now();
+    const { dots, radius, fontSize } = getWordDots(text);
+    const parts = dots.map(d => ({ tx: d.x, ty: d.y, x: SW / 2 + (Math.random() - 0.5) * 60, y: SH / 2 + (Math.random() - 0.5) * 40, r: 0, tr: radius, a: 1 }));
+    const inDur = 900; // vào
+    const holdMs = 2000; // giữ 2s
+    const outDur = 700; // thoát
 
-    const render = () => {
-      ctx.clearRect(0, 0, SW, SH);
-      ctx.fillStyle = gradColor(ctx, SW, SH);
-      ctx.shadowColor = "#ff4fa3"; (ctx as any).shadowBlur = 12;
-      for (const p of parts) { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2); ctx.fill(); }
-      (ctx as any).shadowBlur = 0; ctx.shadowColor = "transparent";
+    const bbox = wordBBoxRef.current;
+    const pad = 28;
+    const clearBand = () => {
+      if (!bbox) return;
+      ctx.clearRect(
+        Math.max(0, bbox.minX - pad),
+        Math.max(0, bbox.minY - pad),
+        Math.min(SW, (bbox.maxX - bbox.minX) + pad * 2),
+        Math.min(SH, (bbox.maxY - bbox.minY) + pad * 2)
+      );
     };
 
+    const render = () => {
+      clearBand();
+      ctx.fillStyle = gradRef.current || gradColor(ctx, SW, SH);
+      ctx.shadowColor = "transparent";
+      (ctx as any).shadowBlur = 0;
+      const alpha = parts.length ? Math.max(0, parts[0].a) : 1;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      for (const p of parts) {
+        const r = Math.max(0.1, p.r);
+        ctx.moveTo(p.x + r, p.y);
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    };
+
+    const startIn = performance.now();
     const stepIn = (t: number) => {
       const p = Math.min(1, (t - startIn) / inDur); const e = easeOutCubic(p);
-      for (const pt of parts) { pt.x += (pt.tx - pt.x) * e; pt.y += (pt.ty - pt.y) * e; pt.r = pt.tr * e; }
+      for (const pt of parts) { pt.x += (pt.tx - pt.x) * e; pt.y += (pt.ty - pt.y) * e; pt.r = pt.tr * e; pt.a = 1; }
       render();
       if (p < 1) { rafRef.current = requestAnimationFrame(stepIn); }
       else {
-        // Kết thúc: để nguyên chữ trên canvas; không xoá, không fade-out
-        resolve();
+        setTimeout(() => {
+          const startOut = performance.now();
+          const stepOut = (tt: number) => {
+            const q = Math.min(1, (tt - startOut) / outDur);
+            for (const pt of parts) { pt.x += (Math.random() - .5) * 2.6; pt.y += (Math.random() - .5) * 2.6; pt.r = pt.tr * (1 - q); pt.a = 1 - q; }
+            render();
+            if (q < 1) { rafRef.current = requestAnimationFrame(stepOut); }
+            else { clearBand(); resolve(); }
+          };
+          rafRef.current = requestAnimationFrame(stepOut);
+        }, holdMs);
       }
     };
 
     rafRef.current = requestAnimationFrame(stepIn);
   });
 
-  // ====== INTRO SEQUENCE ======
+  // ====== GÕ 3 DÒNG SAU "HAPPY BIRTHDAY" (DẠNG CHẤM BAY VÀO, GIỮ 2S RỒI BIẾN MẤT) ======
+const getWordDotsAt = (text: string, centerY: number) => {
+  const SW = SWRef.current, SH = SHRef.current;
+  const off = document.createElement("canvas");
+  const octx = off.getContext("2d")!;
+  off.width = SW; off.height = SH;
+
+  // Dùng cùng kích thước font với HBD
+  let fz = (hbdFontSizeRef.current ?? Math.min(SW, SH) * 0.24);
+  octx.font = `900 ${fz}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`;
+  octx.textAlign = "center"; octx.textBaseline = "middle";
+  let metrics = octx.measureText(text), tries = 0;
+  while (metrics.width > SW * 0.9 && tries < 14) { fz *= 0.92; octx.font = `900 ${fz}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`; metrics = octx.measureText(text); tries++; }
+  octx.fillStyle = "#fff"; octx.fillText(text, SW / 2, centerY);
+
+  const step = Math.max(4, Math.floor(Math.min(SW, SH) / 140));
+  const { data } = octx.getImageData(0, 0, SW, SH);
+  const dots: { x: number; y: number }[] = [];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let y = 0; y < SH; y += step) {
+    for (let x = 0; x < SW; x += step) {
+      const a = data[(y * SW + x) * 4 + 3];
+      if (a > 10) {
+        dots.push({ x, y });
+        if (x < minX) minX = x; if (y < minY) minY = y; if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  let bbox = { minX, minY, maxX, maxY };
+  const marginX = SW * INTRO_MARGIN, marginY = SH * INTRO_MARGIN;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  let dx = SW / 2 - cx; // để chính giữa ngang
+  let dy = centerY - cy; // canh giữa theo Y được truyền vào
+  dx = clamp(dx, marginX - minX, (SW - marginX) - maxX);
+  dy = clamp(dy, marginY - minY, (SH - marginY) - maxY);
+  for (const d of dots) { d.x += dx; d.y += dy; }
+  bbox = { minX: minX + dx, minY: minY + dy, maxX: maxX + dx, maxY: maxY + dy };
+
+  // Giảm bớt số chấm nếu cần
+  const sampled = dots;
+  const baseR = step / 3.0;
+  return { dots: sampled, radius: baseR, step, bbox, fontSize: fz };
+};
+
+const animateLineAppearHoldDisappear = (ctx: CanvasRenderingContext2D, text: string, centerY: number, holdMs = 2000) => new Promise<number>((resolve) => {
+  const SW = SWRef.current, SH = SHRef.current;
+  const { dots, radius, bbox } = getWordDotsAt(text, centerY);
+  const parts = dots.map(d => ({ tx: d.x, ty: d.y, x: SW / 2 + (Math.random() - 0.5) * 60, y: centerY + (Math.random() - 0.5) * 40, r: 0, tr: radius, a: 1 }));
+  const inDur = 700, outDur = 600; // vào & thoát
+  const pad = 24;
+  const clearBand = () => ctx.clearRect(Math.max(0, bbox.minX - pad), Math.max(0, bbox.minY - pad), Math.min(SW, (bbox.maxX - bbox.minX) + pad * 2), Math.min(SH, (bbox.maxY - bbox.minY) + pad * 2));
+
+  const render = () => {
+      clearBand();
+      ctx.fillStyle = gradRef.current || gradColor(ctx, SW, SH);
+      ctx.shadowColor = "transparent";
+      (ctx as any).shadowBlur = 0;
+      const alpha = parts.length ? Math.max(0, parts[0].a) : 1;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      for (const p of parts) {
+        const r = Math.max(0.1, p.r);
+        ctx.moveTo(p.x + r, p.y);
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    };
+
+  // Bay vào
+  const startIn = performance.now();
+  const stepIn = (t: number) => {
+    const p = Math.min(1, (t - startIn) / inDur); const e = easeOutCubic(p);
+    for (const pt of parts) { pt.x += (pt.tx - pt.x) * e; pt.y += (pt.ty - pt.y) * e; pt.r = pt.tr * e; pt.a = 1; }
+    render();
+    if (p < 1) { rafRef.current = requestAnimationFrame(stepIn); }
+    else {
+      // Giữ 2s rồi biến mất
+      setTimeout(() => {
+        const startOut = performance.now();
+        const stepOut = (tt: number) => {
+          const q = Math.min(1, (tt - startOut) / outDur);
+          for (const pt of parts) { pt.x += (Math.random() - .5) * 2.6; pt.y += (Math.random() - .5) * 2.6; pt.r = pt.tr * (1 - q); pt.a = 1 - q; }
+          render();
+          if (q < 1) { rafRef.current = requestAnimationFrame(stepOut); }
+          else { clearBand(); resolve(bbox.maxY); }
+        };
+        rafRef.current = requestAnimationFrame(stepOut);
+      }, holdMs);
+    }
+  };
+  rafRef.current = requestAnimationFrame(stepIn);
+});
+
+const animateLinesDotsSequence = async (ctx: CanvasRenderingContext2D, lines: readonly string[]) => {
+  const centerY = SHRef.current / 2; // chính giữa màn hình
+  let lastBottom = centerY;
+  for (const line of lines) {
+    lastBottom = await animateLineAppearHoldDisappear(ctx, line, centerY, 2000);
+  }
+  return lastBottom;
+};
+
+// ====== INTRO SEQUENCE ======
   useEffect(() => {
     if (entered) return; // không chạy nếu đã vào app chính
 
@@ -502,17 +642,20 @@ Lớp bờ du :)) 🎂🎉
       if (fxRef.current && ftx) resizeCanvas(fxRef.current, ftx);
       if (ctnRef.current && ctnCtx) resizeCanvas(ctnRef.current, ctnCtx);
       if (mtxCtx) resizeMatrix(mtxCtx);
+      if (ctnCtx) { gradRef.current = gradColor(ctnCtx, SWRef.current, SHRef.current); }
       initStars();
     };
 
     const loop = (ts: number) => {
       if (entered) return; // stop when entered
-      if (starsCtx) drawStars(starsCtx, ts);
+      frameRef.current++;
+      const sparse = heavyPhaseRef.current && (frameRef.current % 2 === 1);
+      if (starsCtx && !sparse) drawStars(starsCtx, ts);
       if (mCtx) {
       if (!wordAnimActiveRef.current) drawMatrix(mCtx);
       else mCtx.clearRect(0, 0, SWRef.current, SHRef.current);
     }
-      if (fxCtx) drawConfetti(fxCtx);
+      if (fxCtx && !sparse) drawConfetti(fxCtx);
       rafRef.current = requestAnimationFrame(loop);
     };
 
@@ -536,11 +679,13 @@ Lớp bờ du :)) 🎂🎉
         }
       }
       emitConfetti(INTRO_CONFETTI);
+      heavyPhaseRef.current = true;
       await animateWordSequence(cCtx, INTRO_MESSAGE);
-      // đặt nút ngay bên dưới chữ HBD
-      const bbox = wordBBoxRef.current;
+      // Sau khi hiện HBD xong, hiện thêm 3 dòng hiệu ứng chấm bay vào (mỗi dòng giữ 2s rồi biến mất)
+      const bottomY = await animateLinesDotsSequence(cCtx, AFTER_LINES);
+      heavyPhaseRef.current = false;
       const SH = SHRef.current;
-      const top = bbox ? Math.min(bbox.maxY + 48, SH - 100) : Math.min(SH*0.65, SH-100);
+      const top = Math.min(bottomY + 48, SH - 100);
       setIntroButtonTop(top);
       setShowEnter(true);
     };
@@ -562,7 +707,7 @@ Lớp bờ du :)) 🎂🎉
   if (entered && showLetter) {
     return (
       <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#7a3a54ff", height: "100vh" }}>
-        <h1>💌 Gửi đến Như 💌</h1>
+        <h1>💌 Sinh nhật vui vẻ nhé 💌</h1>
         <p style={{ fontSize: "18px", maxWidth: "680px", margin: "24px auto", lineHeight: "1.7", whiteSpace: "pre-line", textAlign: "center" }}>
           {letterText}
         </p>
