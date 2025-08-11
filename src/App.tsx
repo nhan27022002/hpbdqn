@@ -69,11 +69,11 @@ function App() {
    Tuổi mới thêm niềm vui mới
 Cầu gì được nấy 
 Cầu tiền được tiền
- Cầu tình được tình
- Cầu tài được tài
+Cầu tình được tình 
+Cầu tài được tài
 Chúc em sống mãi trong ánh sáng của 10 phương chư phật.
-Lớp bờ du :)) 😘😘
- 🎂🎉`;
+Lớp bờ du :)) 🎂🎉😘😘
+ 🎂🎉🎂🎉`;
 
   const audioRef = useRef<HTMLAudioElement>(new Audio(src));
   const microphoneStreamRef = useRef<MediaStream | undefined>(undefined);
@@ -464,7 +464,7 @@ Lớp bờ du :)) 😘😘
     // Hiện chữ HBD bằng chấm, giữ 2s rồi TAN BIẾN
     wordAnimActiveRef.current = true; // tắt layer matrix trong lúc hiển thị chữ
     const SW = SWRef.current, SH = SHRef.current;
-    const { dots, radius, fontSize } = getWordDots(text);
+    const { dots, radius } = getWordDots(text);
     const parts = dots.map(d => ({ tx: d.x, ty: d.y, x: SW / 2 + (Math.random() - 0.5) * 60, y: SH / 2 + (Math.random() - 0.5) * 40, r: 0, tr: radius, a: 1 }));
     const inDur = 900; // vào
     const holdMs = 2000; // giữ 2s
@@ -710,7 +710,7 @@ const animateLinesDotsSequence = async (ctx: CanvasRenderingContext2D, lines: re
   if (entered && showLetter) {
     return (
       <div style={{ padding: "20px", textAlign: "center", backgroundColor: "#7a3a54ff", height: "100vh" }}>
-        <h1>💌 Gửi Như 💌</h1>
+        <h1>💌 Gửi Quỳnh Như 💌</h1>
         <p style={{ fontSize: "18px", maxWidth: "680px", margin: "24px auto", lineHeight: "1.7", whiteSpace: "pre-line", textAlign: "center" }}>
           {letterText}
         </p>
